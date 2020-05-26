@@ -296,13 +296,13 @@ def train(model, device, config, epochs=5, batch_size=1, save_cp=True, log_step=
     optimizer = optim.Adam(model.parameters(), lr=config.learning_rate / config.batch, betas=(0.9, 0.999), eps=1e-08)
     scheduler = optim.lr_scheduler.LambdaLR(optimizer, burnin_schedule)
 
-    criterion = Yolo_loss(device=device, batch=config.batch // config.subdivisions,n_classes=config.classes)
+    criterion = Yolo_loss(device=device, batch=config.batch // config.subdivisions, n_classes=config.classes)
     # scheduler = ReduceLROnPlateau(optimizer, mode='max', verbose=True, patience=6, min_lr=1e-7)
     # scheduler = CosineAnnealingWarmRestarts(optimizer, 0.001, 1e-6, 20)
 
     model.train()
     for epoch in range(epochs):
-        #model.train()
+        # model.train()
         epoch_loss = 0
         epoch_step = 0
 
@@ -323,7 +323,7 @@ def train(model, device, config, epochs=5, batch_size=1, save_cp=True, log_step=
 
                 epoch_loss += loss.item()
 
-                if global_step  % config.subdivisions == 0:
+                if global_step % config.subdivisions == 0:
                     optimizer.step()
                     scheduler.step()
                     model.zero_grad()
@@ -376,11 +376,17 @@ def get_args(**kwargs):
                         help='Load model from a .pth file')
     parser.add_argument('-g', '--gpu', metavar='G', type=str, default='-1',
                         help='GPU', dest='gpu')
-    parser.add_argument('-dir', '--data-dir', type=str, default=None,
+    parser.add_argument('-log', '--log_dir', metavar='LD', type=str, default='./log',
+                        help='log dir', dest='log_dir')
+    parser.add_argument('-ck', '--checkpoints_dir', metavar='MD', type=str, default='./model',
+                        help='checkpoints dir', dest='checkpoints')
+    parser.add_argument('-tf', '--tensorboard_dir', metavar='TD', type=str, default='./tensorboardlogs',
+                        help='tensorboard dir', dest='TRAIN_TENSORBOARD_DIR')
+    parser.add_argument('-data', '--data-dir', type=str, default=None,
                         help='dataset dir', dest='dataset_dir')
-    parser.add_argument('-pretrained',type=str,default=None,help='pretrained yolov4.conv.137')
-    parser.add_argument('-classes',type=int,default=80,help='dataset classes')
-    parser.add_argument('-train_label_path',dest='train_label',type=str,default='train.txt',help="train label path")
+    parser.add_argument('-pretrained', type=str, default=None, help='pretrained yolov4.conv.137')
+    parser.add_argument('-classes', type=int, default=80, help='dataset classes')
+    parser.add_argument('-train_label_path', dest='train_label', type=str, default='train.txt', help="train label path")
     args = vars(parser.parse_args())
 
     for k in args.keys():
@@ -425,13 +431,13 @@ def init_logger(log_file=None, log_dir=None, log_level=logging.INFO, mode='w', s
 
 
 if __name__ == "__main__":
-    logging = init_logger(log_dir='log')
     cfg = get_args(**Cfg)
+    logging = init_logger(log_dir=cfg.log_dir)
     os.environ["CUDA_VISIBLE_DEVICES"] = cfg.gpu
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Using device {device}')
 
-    model = Yolov4(cfg.pretrained,n_classes=cfg.classes)
+    model = Yolov4(cfg.pretrained, n_classes=cfg.classes)
 
     if torch.cuda.device_count() > 1:
         model = torch.nn.DataParallel(model)
@@ -443,7 +449,7 @@ if __name__ == "__main__":
               epochs=cfg.TRAIN_EPOCHS,
               device=device, )
     except KeyboardInterrupt:
-        torch.save(model.state_dict(), 'INTERRUPTED.pth')
+        torch.save(model.state_dict(), os.path.join(cfg.checkpoints, 'INTERRUPTED.pth'))
         logging.info('Saved interrupt')
         try:
             sys.exit(0)
