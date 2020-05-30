@@ -243,9 +243,9 @@ def collate(batch):
     return images, bboxes
 
 
-def train(model, device, config, epochs=5, batch_size=1, save_cp=True, log_step=20, img_scale=0.5):
-    train_dataset = Yolo_dataset(config.train_label, config)
-    val_dataset = Yolo_dataset(config.val_label, config)
+def train(model, device, config, images_dir, epochs=5, batch_size=1, save_cp=True, log_step=20, img_scale=0.5):
+    train_dataset = Yolo_dataset(config.train_label, os.path.join(images_dir, "train2017"),  config)
+    val_dataset = Yolo_dataset(config.val_label, os.path.join(images_dir, "val2017"), config)
 
     n_train = len(train_dataset)
     n_val = len(val_dataset)
@@ -378,15 +378,17 @@ def get_args(**kwargs):
                         help='GPU', dest='gpu')
     parser.add_argument('-log', '--log_dir', metavar='LD', type=str, default='./log',
                         help='log dir', dest='log_dir')
-    parser.add_argument('-ck', '--checkpoints_dir', metavar='MD', type=str, default='./model',
+    parser.add_argument('-ck', '--checkpoints-dir', metavar='MD', type=str, default='./model',
                         help='checkpoints dir', dest='checkpoints')
-    parser.add_argument('-tf', '--tensorboard_dir', metavar='TD', type=str, default='./tensorboardlogs',
+    parser.add_argument('-tf', '--tensorboard-dir', metavar='TD', type=str, default='./tensorboardlogs',
                         help='tensorboard dir', dest='TRAIN_TENSORBOARD_DIR')
     parser.add_argument('-data', '--data-dir', type=str, default=None,
                         help='dataset dir', dest='dataset_dir')
-    parser.add_argument('-pretrained', type=str, default=None, help='pretrained yolov4.conv.137')
-    parser.add_argument('-classes', type=int, default=80, help='dataset classes')
-    parser.add_argument('-train_label_path', dest='train_label', type=str, default='train.txt', help="train label path")
+    parser.add_argument('--pretrained', type=str, default=None, help='pretrained yolov4.conv.137')
+    parser.add_argument('--classes', type=int, default=80, help='dataset classes')
+    parser.add_argument('--train-label-path', dest='train_label', type=str, default='train.txt', help="train label path")
+    parser.add_argument('--val-lable-path', dest='val_label', type=str, default='val.txt', help="validation label path")
+    parser.add_argument('--images-dir', type=str, help='images directory of coco/images')
     args = vars(parser.parse_args())
 
     for k in args.keys():
@@ -445,6 +447,7 @@ if __name__ == "__main__":
 
     try:
         train(model=model,
+              images_dir=cfg.images_dir,
               config=cfg,
               epochs=cfg.TRAIN_EPOCHS,
               device=device, )

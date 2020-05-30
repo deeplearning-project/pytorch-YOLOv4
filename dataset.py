@@ -239,7 +239,7 @@ def draw_box(img, bboxes):
 
 
 class Yolo_dataset(Dataset):
-    def __init__(self, lable_path, cfg):
+    def __init__(self, lable_path, image_path, cfg):
         super(Yolo_dataset, self).__init__()
         if cfg.mixup == 2:
             print("cutmix=1 - isn't supported for Detector")
@@ -254,6 +254,7 @@ class Yolo_dataset(Dataset):
         f = open(lable_path, 'r', encoding='utf-8')
         for line in f.readlines():
             data = line.split(" ")
+            data[0] = os.path.join(image_path, data[0])
             truth[data[0]] = []
             for i in data[1:]:
                 truth[data[0]].append([int(j) for j in i.split(',')])
@@ -266,7 +267,7 @@ class Yolo_dataset(Dataset):
     def __getitem__(self, index):
         img_path = list(self.truth.keys())[index]
         bboxes = np.array(self.truth.get(img_path), dtype=np.float)
-        img_path = os.path.join(self.cfg.dataset_dir, img_path)
+        # img_path = os.path.join(self.cfg.dataset_dir, img_path)
         use_mixup = self.cfg.mixup
         if random.randint(0, 1):
             use_mixup = 0
@@ -287,7 +288,7 @@ class Yolo_dataset(Dataset):
             if i != 0:
                 img_path = random.choice(list(self.truth.keys()))
                 bboxes = np.array(self.truth.get(img_path), dtype=np.float)
-                img_path = os.path.join(self.cfg.dataset_dir, img_path)
+                #img_path = os.path.join(self.cfg.dataset_dir, img_path)
             img = cv2.imread(img_path)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             if img is None:
@@ -387,10 +388,12 @@ if __name__ == "__main__":
 
     random.seed(2020)
     np.random.seed(2020)
-    Cfg.dataset_dir = '/mnt/e/Dataset'
-    dataset = Yolo_dataset(Cfg.train_label, Cfg)
-    for i in range(100):
-        out_img, out_bboxes = dataset.__getitem__(i)
-        a = draw_box(out_img.copy(), out_bboxes.astype(np.int32))
-        plt.imshow(a.astype(np.int32))
-        plt.show()
+    #Cfg.dataset_dir = '/mnt/e/Dataset'
+    images_path = "/home/zhangyabo2/pytorch-YOLOv4/Datset/COCO/images/val2017/"
+    dataset = Yolo_dataset(Cfg.val_label, images_path, Cfg)
+    print(len(dataset))
+#    for i in range(100):
+#        out_img, out_bboxes = dataset.__getitem__(i)
+#        a = draw_box(out_img.copy(), out_bboxes.astype(np.int32))
+#        plt.imshow(a.astype(np.int32))
+#        plt.show()
