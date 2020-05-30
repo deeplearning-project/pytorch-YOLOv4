@@ -15,23 +15,23 @@ from collections import defaultdict
 from tqdm import tqdm
 import os
 
-"""hyper parameters"""
-json_file_path = 'E:/Dataset/coco2017/annotations_trainval2017/annotations/instances_val2017.json'
-images_dir_path = 'mscoco2017/train2017/'
-output_path = '../data/val.txt'
 
-"""load json file"""
+root_path = "/home/zhangyabo2/pytorch-YOLOv4/Dataset/COCO/"
+json_file_path = os.path.join(root_path, 'annotations/instances_val2017.json')
+# images_dir_path = os.path.join(root_path, 'images/train2017/')
+output_path = os.path.join(root_path, 'bboxes/val.txt')
+
 name_box_id = defaultdict(list)
 id_name = dict()
+print(json_file_path)
 with open(json_file_path, encoding='utf-8') as f:
     data = json.load(f)
-
-"""generate labels"""
 images = data['images']
 annotations = data['annotations']
 for ant in tqdm(annotations):
     id = ant['image_id']
-    name = os.path.join(images_dir_path, images[id]['file_name'])
+    # name = os.path.join(images_dir_path, images[id]['file_name'])
+    name = (12-len(str(id)))*'0' + str(id) +'.jpg'
     cat = ant['category_id']
 
     if cat >= 1 and cat <= 11:
@@ -55,7 +55,6 @@ for ant in tqdm(annotations):
 
     name_box_id[name].append([ant['bbox'], cat])
 
-"""write to txt"""
 with open(output_path, 'w') as f:
     for key in tqdm(name_box_id.keys()):
         f.write(key)
