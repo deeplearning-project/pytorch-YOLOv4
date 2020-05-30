@@ -386,8 +386,8 @@ def get_args(**kwargs):
                         help='dataset dir', dest='dataset_dir')
     parser.add_argument('--pretrained', type=str, default=None, help='pretrained yolov4.conv.137')
     parser.add_argument('--classes', type=int, default=80, help='dataset classes')
-    parser.add_argument('--train-label-path', dest='train_label', type=str, default='train.txt', help="train label path")
-    parser.add_argument('--val-lable-path', dest='val_label', type=str, default='val.txt', help="validation label path")
+    parser.add_argument('--train-label-path', dest='train_label', type=str, default='./Dataset/COCO/bboxes/train.txt', help="train label path")
+    parser.add_argument('--val-lable-path', dest='val_label', type=str, default='./Dataset/COCO/bboxes/val.txt', help="validation label path")
     parser.add_argument('--images-dir', type=str, help='images directory of coco/images')
     args = vars(parser.parse_args())
 
