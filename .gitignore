@@ -2,6 +2,8 @@ ttest
 *.weights
 *.pth
 *.onnx
+*.pbs
+*.zip
 
 __pycache__
 .idea
@@ -12,3 +14,8 @@ log
 predictions.jpg
 predictions_onnx.jpg
 Dataset/
+logs
+models
+tensor_logs
+scripts/
+outcome/
