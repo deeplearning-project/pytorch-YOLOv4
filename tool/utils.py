@@ -211,6 +211,7 @@ def get_region_boxes_out_model(output, conf_thresh, num_classes, anchors, num_an
     if len(output.shape) == 3:
         output = np.expand_dims(output, axis=0)
     batch = output.shape[0]
+    #print(output.shape[1], num_classes)
     assert (output.shape[1] == (5 + num_classes) * num_anchors)
     h = output.shape[2]
     w = output.shape[3]
