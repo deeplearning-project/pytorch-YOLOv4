@@ -1,15 +1,5 @@
 # -*- coding: utf-8 -*-
-'''
-@Time          : 2020/05/06 15:07
-@Author        : Tianxiaomo
-@File          : train.py
-@Noice         :
-@Modificattion :
-    @Author    :
-    @Time      :
-    @Detail    :
 
-'''
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -352,7 +342,7 @@ def train(model, device, config, images_dir, epochs=5, batch_size=1, save_cp=Tru
 
                 pbar.update(images.shape[0])
 
-            if save_cp:
+            if save_cp and epoch % cfg.save_fre == 0:
                 try:
                     os.mkdir(config.checkpoints)
                     logging.info('Created checkpoint directory')
@@ -389,6 +379,7 @@ def get_args(**kwargs):
     parser.add_argument('--train-label-path', dest='train_label', type=str, default='./Dataset/COCO/bboxes/train.txt', help="train label path")
     parser.add_argument('--val-lable-path', dest='val_label', type=str, default='./Dataset/COCO/bboxes/val.txt', help="validation label path")
     parser.add_argument('--images-dir', type=str, help='images directory of coco/images')
+    parser.add_argument('-sf', '--save-fre', type=int, default=5, help='frequency of saving model')
     args = vars(parser.parse_args())
 
     for k in args.keys():
@@ -398,8 +389,6 @@ def get_args(**kwargs):
 
 def init_logger(log_file=None, log_dir=None, log_level=logging.INFO, mode='w', stdout=True):
     """
-    log_dir: 日志文件的文件夹路径
-    mode: 'a', append; 'w', 覆盖原文件写入.
     """
     import datetime
     def get_date_str():
@@ -414,7 +403,6 @@ def init_logger(log_file=None, log_dir=None, log_level=logging.INFO, mode='w', s
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     log_file = os.path.join(log_dir, log_file)
-    # 此处不能使用logging输出
     print('log file path:' + log_file)
 
     logging.basicConfig(level=logging.DEBUG,

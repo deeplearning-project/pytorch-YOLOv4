@@ -13,7 +13,7 @@
 from easydict import EasyDict
 
 Cfg = EasyDict()
-Cfg.batch = 32
+Cfg.batch = 256
 Cfg.subdivisions = 16
 Cfg.width = 608
 Cfg.height = 608
@@ -45,7 +45,7 @@ Cfg.flip = 1
 Cfg.blur = 0
 Cfg.gaussian = 0
 Cfg.boxes = 60  # box num
-Cfg.TRAIN_EPOCHS = 300
+Cfg.TRAIN_EPOCHS = 50
 Cfg.train_label = 'Dataset/COCO/bboxes/train.txt'
 Cfg.val_label = 'Dataset/COCO/bboxes/val.txt'
 Cfg.TRAIN_OPTIMIZER = 'adam'

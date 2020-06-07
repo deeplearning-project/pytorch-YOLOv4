@@ -164,7 +164,7 @@ def test(model, annotations, cfg):
         print("Annotations do not have 'images' key")
         return
     images = annotations["images"]
-    images = images[:10]
+    images = images[:1000]
     resFile = 'data/coco_val_outputs.json'
 
     if torch.cuda.is_available():
