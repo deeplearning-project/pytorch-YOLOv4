@@ -1,0 +1,1 @@
+OMP_NUM_THREADS=8 python ./utils/train.py -l 0.001  -g 2,3,4,5  -log ./logs/yolo_resnet101 -ck ./models/yolo_resnet101 -tf ./tensor_logs/yolo_resnet101 --images-dir /dataset/yangfan/coco/images --pretrained  ./models/yolov4.co

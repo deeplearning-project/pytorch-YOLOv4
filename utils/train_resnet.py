@@ -25,7 +25,7 @@ def get_args():
     parser.add_argument('--nThreads', default=0, type=int, help='# threads for loading data')
     parser.add_argument('--max-epochs', type=int, default=120, help='Epochs of training')
     parser.add_argument('--data-dir', type=str, default='/share/data/zhangyabo2/ImageNet/', help='root directory of dataset, no need to specify train or val dir')
-    parser.add_argument('--log-dir', type=str, default='./log/backbone/ResNet101', help='log directory')
+    parser.add_argument('--log-dir', type=str, default='./logs/backbone/ResNet101', help='log directory')
     parser.add_argument('--tensor-dir', type=str, default='./tensor_logs/backbone/ResNet101', help='tensorboard log directory') 
     parser.add_argument('-sd', '--save-dir', type=str, default='./models/backbone', help='saving model directory')
     
