@@ -22,11 +22,11 @@ from easydict import EasyDict as edict
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
-from cfg import Cfg
+from cfg.cfg import Cfg
 from tool.darknet2pytorch import Darknet
 from tool.utils import load_class_names
 from tool.torch_utils import do_detect
-from models import Yolov4
+from model.models import Yolov4
 
 def get_class_name(cat):
     class_names = load_class_names("./data/coco.names")
