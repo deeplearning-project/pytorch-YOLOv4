@@ -379,23 +379,23 @@ class Yolov4Head(nn.Module):
 
 
 class Yolov4(nn.Module):
-    def __init__(self, yolov4conv137weight=None, n_classes=80):
+    def __init__(self, darknet=None, resnet_weight=None, resnet_name=101, is_SE=False, n_classes=80):
         super().__init__()
-
+        self.backbone = (darknet is not None) or (darknet is None and resnet_weight is None) 
         output_ch = (4 + 1 + n_classes) * 3
 
-        # backbone
-        self.down1 = DownSample1()
-        self.down2 = DownSample2()
-        self.down3 = DownSample3()
-        self.down4 = DownSample4()
-        self.down5 = DownSample5()
         # neck
         self.neck = Neck()
-        # yolov4conv137
-        if yolov4conv137weight:
+        
+        # backbone
+        if darknet:
+            self.down1 = DownSample1()
+            self.down2 = DownSample2()
+            self.down3 = DownSample3()
+            self.down4 = DownSample4()
+            self.down5 = DownSample5()
             _model = nn.Sequential(self.down1, self.down2, self.down3, self.down4, self.down5, self.neck)
-            pretrained_dict = torch.load(yolov4conv137weight)
+            pretrained_dict = torch.load(darknet)
 
             model_dict = _model.state_dict()
             # 1. filter out unnecessary keys
@@ -403,15 +403,41 @@ class Yolov4(nn.Module):
             # 2. overwrite entries in the existing state dict
             model_dict.update(pretrained_dict)
             _model.load_state_dict(model_dict)
+        elif resnet_weight:
+            self.resnet = ResNet(name=resnet_name, is_SE=is_SE, is_backbone=True)
+            pretranined_dict = torch.load(resnet_weight)
+            self.resnet.load_state_dcit(model_dict)
+            # adjust the number of channels
+            self.bottleneck1 = nn.Conv2d(512, 256, kernel_size=1, stride=1)
+            self.relu1 = nn.ReLU()
+            self.batchnorm1 = nn.BatchNorm2d(256)
+            self.bottleneck2 = nn.Conv2d(1024, 512, kernel_size=1, stride=1)
+            self.relu2 = nn.ReLU()
+            self.batchnorm2 = nn.BatchNorm2d(512)
+            self.bottleneck3 = nn.Conv2d(2048, 1024, kernel_size=1, stride=1)
+            self.relu3 = nn.ReLU()
+            self.batchnorm3 = nn.BatchNorm2d(1024)
+        else: 
+            self.down1 = DownSample1()
+            self.down2 = DownSample2()
+            self.down3 = DownSample3()
+            self.down4 = DownSample4()
+            self.down5 = DownSample5()
         # head
         self.head = Yolov4Head(output_ch)
 
     def forward(self, input):
-        d1 = self.down1(input)
-        d2 = self.down2(d1)
-        d3 = self.down3(d2)
-        d4 = self.down4(d3)
-        d5 = self.down5(d4)
+        if self.backbone:
+            d1 = self.down1(input)
+            d2 = self.down2(d1)
+            d3 = self.down3(d2)
+            d4 = self.down4(d3)
+            d5 = self.down5(d4)
+        else:
+            d = self.resnet(input)
+            d3 = self.batchnorm1(self.relu1(self.bottleneck1(d[0])))
+            d4 = self.batchnorm2(self.relu2(self.bottleneck2(d[1])))
+            d5 = self.batchnorm3(self.relu3(self.bottleneck3(d[2])))
 
         x20, x13, x6 = self.neck(d5, d4, d3)
 

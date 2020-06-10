@@ -30,8 +30,9 @@ class ImageNetDataset(Dataset):
     def __getitem__(self, idx):
         img = Image.open(self.file_list[idx])
         if img.mode != "RGB":
-            print("bad image", self.file_list[idx])
-            img = Image.open(self.file_list[0]) 
+            # print("bad image", self.file_list[idx])
+            # img = Image.open(self.file_list[0]) 
+            img = img.convert('RGB')
         if self.transform is not None:
             img = self.transform(img)
         else:
