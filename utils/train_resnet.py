@@ -28,7 +28,7 @@ def get_args():
     parser.add_argument('--log-dir', type=str, default='./logs/backbone/ResNet101', help='log directory')
     parser.add_argument('--tensor-dir', type=str, default='./tensor_logs/backbone/ResNet101', help='tensorboard log directory') 
     parser.add_argument('-sd', '--save-dir', type=str, default='./models/backbone', help='saving model directory')
-    
+    parser.add_argument('--start', type=int, default=0, help='start epoch number')
     return parser.parse_args()
 
 
@@ -88,7 +88,7 @@ def main():
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
     transform_test = transforms.Compose([
-        transforms.Resize(224),
+        transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
@@ -97,9 +97,9 @@ def main():
     val_set = ImageNetDataset(args.data_dir, transform=transform_test, mode='val')
     
     #print(len(train_set)) 
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size,
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True,
                                                num_workers=args.nThreads)
-    test_loader = torch.utils.data.DataLoader(val_set, batch_size=args.batch_size,
+    test_loader = torch.utils.data.DataLoader(val_set, batch_size=args.batch_size, shuffle=False,
                                               num_workers=args.nThreads)
     
     
@@ -115,28 +115,33 @@ def main():
     else:
         raise NotImplementedError('Unrecognized model: '+args.net_name)
     
+    if os.path.exists(os.path.join(args.save_dir, args.net_name+'_best.pth')):
+        model.load_state_dict(torch.load(os.path.join(args.save_dir, args.net_name+'_best.pth'), map_location=device))
+
+    model.to(device)
     if torch.cuda.device_count() > 1:
         model = torch.nn.DataParallel(model)
-    model.to(device)
-    
+    print("cuda number:",torch.cuda.device_count())
+#    if os.path.exists(os.path.join(args.save_dir, args.net_name+'_best.pth')):
+#        model.load_state_dict(torch.load(os.path.join(args.save_dir, args.net_name+'_best.pth'), map_location=device))
     # specify loss function
     criterion = nn.CrossEntropyLoss()
     # specify optimizer
     if args.optimizer == 'adam':
-        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+        optimizer = torch.optim.Adam([{'params': model.parameters(), 'initial_lr': args.lr}], lr=args.lr)
     elif args.optimizer == 'SGD':
-        optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-4)
+        optimizer = torch.optim.SGD([{'params': model.parameters(), 'initial_lr': args.lr}], lr=args.lr, momentum=0.9, weight_decay=1e-4)
     else:
         raise NotImplementedError('Unrecognized optimizer: '+args.optimizer)
     
-    milestones = [40, 80]
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=0.1)
+    milestones = [20, 40, 60, 80, 100]
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=0.1, last_epoch=args.start-1)
     
     n_epochs = args.max_epochs
     best_top1_acc = 0
     best_top5_acc = 0
     
-    for epoch in range(n_epochs):
+    for epoch in range(args.start, n_epochs):
         train_loss = 0.0
         model.train()
         for train_data, train_gt in train_loader:
@@ -163,6 +168,8 @@ def main():
         model.eval()  # prep model for evaluation
     
         # test process does not require back propagation
+        top1_acc = 0
+        top5_acc = 0
         with torch.no_grad():
             for test_data, test_gt in test_loader:
                 test_data = test_data.to(device)
@@ -173,25 +180,30 @@ def main():
                 output = output.cpu().numpy()
                 # convert output probabilities to predicted class
                 top1_acc += (output.argmax(axis=-1)==test_gt).mean()
-                top5_ids = output.argsort()[:, -5:][::-1]
+                top5_ids = output.argsort()[:, -5:][:, ::-1]
                 top5_num = 0
                 # calculate top5 accuracy
                 for ids, gt in zip(top5_ids, test_gt):
-                    if ids in gt:
+                    if gt in ids:
                         top5_num += 1
                 top5_acc += top5_num / len(test_gt)
         top1_acc /= len(test_loader)
         top5_acc /= len(test_loader)
         
         # save best model
-        if (top1_acc+top5_acc) > (best_top1_acc+best_top5_acc):
+        if (top1_acc+top5_acc) >= (best_top1_acc+best_top5_acc):
             best_top1_acc = top1_acc
             best_top5_acc = top5_acc
             logger.info(f'EPOCH: {epoch}\nBEST TOP1 ACC: {top1_acc}, BEST TOP5 ACC: {top5_acc}')
-            torch.save(model.state_dict(), os.path.join(args.save_dir, args.net_name+'_best.pth'))
-        
+            if torch.cuda.device_count() > 1:
+                torch.save(model.module.state_dict(), os.path.join(args.save_dir, args.net_name+'_best.pth'))
+#                print("SUCCESS save")
+#                break
+            else:
+                torch.save(model.state_dict(), os.path.join(args.save_dir, args.net_name+'_best.pth'))
         writer.add_scalar('top1_acc', top1_acc, epoch)
         writer.add_scalar('top5_acc', top5_acc, epoch)
+        logger.info(f'EPOCH: {epoch}\nTOP1 ACC: {top1_acc}, TOP5 ACC: {top5_acc}\nBEST TOP1 ACC: {best_top1_acc}, BEST TOP5 ACC: {best_top5_acc}')
     
 
 if __name__ == '__main__':

@@ -44,14 +44,19 @@ class ImageNetDataset(Dataset):
 if __name__ == '__main__':
     import torch.utils.data as D
     from transform import RandomResize 
+#    tran = T.Compose([
+#        RandomResize([256, 480]),
+#        T.RandomHorizontalFlip(),
+#        T.RandomCrop(224),
+#        T.ToTensor(), 
+#        T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+#    ])
+         
     tran = T.Compose([
-        RandomResize([256, 480]),
-        T.RandomHorizontalFlip(),
-        T.RandomCrop(224),
-        T.ToTensor(), 
+        T.Resize(224),
+        T.ToTensor(),
         T.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
-    
     data = ImageNetDataset('/share/data/zhangyabo2/ImageNet/', transform=tran, mode='val')
     loader = D.DataLoader(data, batch_size=2)
     for img, gt in loader:
