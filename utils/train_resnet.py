@@ -118,25 +118,28 @@ def main():
     if os.path.exists(os.path.join(args.save_dir, args.net_name+'_best.pth')):
         model.load_state_dict(torch.load(os.path.join(args.save_dir, args.net_name+'_best.pth'), map_location=device))
 
-    model.to(device)
+    # model.to(device)
     if torch.cuda.device_count() > 1:
         model = torch.nn.DataParallel(model)
     print("cuda number:",torch.cuda.device_count())
 #    if os.path.exists(os.path.join(args.save_dir, args.net_name+'_best.pth')):
 #        model.load_state_dict(torch.load(os.path.join(args.save_dir, args.net_name+'_best.pth'), map_location=device))
+    model.to(device)
     # specify loss function
     criterion = nn.CrossEntropyLoss()
     # specify optimizer
     if args.optimizer == 'adam':
         optimizer = torch.optim.Adam([{'params': model.parameters(), 'initial_lr': args.lr}], lr=args.lr)
     elif args.optimizer == 'SGD':
-        optimizer = torch.optim.SGD([{'params': model.parameters(), 'initial_lr': args.lr}], lr=args.lr, momentum=0.9, weight_decay=1e-4)
+        optimizer = torch.optim.SGD([{'params': model.parameters(), 'initial_lr': args.lr*0.01}], lr=args.lr*0.01, momentum=0.9, weight_decay=1e-4)
     else:
         raise NotImplementedError('Unrecognized optimizer: '+args.optimizer)
     
     milestones = [20, 40, 60, 80, 100]
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=0.1, last_epoch=args.start-1)
     
+    print(optimizer.param_groups[0]['lr'])
+    print(scheduler.get_lr())
     n_epochs = args.max_epochs
     best_top1_acc = 0
     best_top5_acc = 0
@@ -161,7 +164,7 @@ def main():
         train_loss = train_loss / len(train_loader.dataset)
         
         writer.add_scalar('training_loss', loss.item(), epoch)
-        logger.info('Epoch:  {} , Training Loss: {}'.format(epoch + 1, train_loss))
+        logger.info('Epoch:  {} , Training Loss: {}'.format(epoch, train_loss))
         scheduler.step()
         
         # eval
