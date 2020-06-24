@@ -13,7 +13,7 @@
 from easydict import EasyDict
 
 Cfg = EasyDict()
-Cfg.batch = 256
+Cfg.batch = 64
 Cfg.subdivisions = 16
 Cfg.width = 608
 Cfg.height = 608

@@ -15,6 +15,7 @@ from easydict import EasyDict as edict
 from tqdm import tqdm
 import numpy as np
 
+sys.path.append('./')
 from dataset.dataset import Yolo_dataset
 from cfg.cfg import Cfg
 from model.models import Yolov4
@@ -187,9 +188,9 @@ def train(model, device, config, images_dir, epochs=5, batch_size=1, save_cp=Tru
     n_val = len(val_dataset)
 
     train_loader = DataLoader(train_dataset, batch_size=config.batch // config.subdivisions, shuffle=True,
-                              num_workers=8, pin_memory=True, drop_last=True, collate_fn=collate)
+                              num_workers=2, pin_memory=True, drop_last=True, collate_fn=collate)
 
-    val_loader = DataLoader(val_dataset, batch_size=config.batch // config.subdivisions, shuffle=True, num_workers=8,
+    val_loader = DataLoader(val_dataset, batch_size=config.batch // config.subdivisions, shuffle=True, num_workers=2,
                             pin_memory=True, drop_last=True)
 
     writer = SummaryWriter(log_dir=config.TRAIN_TENSORBOARD_DIR,
@@ -294,7 +295,10 @@ def train(model, device, config, images_dir, epochs=5, batch_size=1, save_cp=Tru
                     logging.info('Created checkpoint directory')
                 except OSError:
                     pass
-                torch.save(model.state_dict(), os.path.join(config.checkpoints, f'Yolov4_epoch{epoch + 1}.pth'))
+                if torch.cuda.device_count() > 1:
+                    torch.save(model.module.state_dict(), os.path.join(config.checkpoints, f'Yolov4_epoch{epoch + 1}.pth'))
+                else: 
+                    torch.save(model.state_dict(), os.path.join(config.checkpoints, f'Yolov4_epoch{epoch + 1}.pth'))
                 logging.info(f'Checkpoint {epoch + 1} saved !')
 
     writer.close()
@@ -314,18 +318,21 @@ def get_args(**kwargs):
                         help='GPU', dest='gpu')
     parser.add_argument('-log', '--log_dir', metavar='LD', type=str, default='./log',
                         help='log dir', dest='log_dir')
-    parser.add_argument('-ck', '--checkpoints-dir', metavar='MD', type=str, default='./model',
+    parser.add_argument('-ck', '--checkpoints-dir', metavar='MD', type=str, default='./models',
                         help='checkpoints dir', dest='checkpoints')
     parser.add_argument('-tf', '--tensorboard-dir', metavar='TD', type=str, default='./tensorboardlogs',
                         help='tensorboard dir', dest='TRAIN_TENSORBOARD_DIR')
     parser.add_argument('-data', '--data-dir', type=str, default=None,
                         help='dataset dir', dest='dataset_dir')
-    parser.add_argument('--pretrained', type=str, default=None, help='pretrained yolov4.conv.137')
+    parser.add_argument('--darknet-pretrained', type=str, default=None, help='pretrained yolov4.conv.137')
+    parser.add_argument('--resnet-pretrained', type=str, default=None, help='pretrained resnet backbone')
     parser.add_argument('--classes', type=int, default=80, help='dataset classes')
     parser.add_argument('--train-label-path', dest='train_label', type=str, default='./Dataset/COCO/bboxes/train.txt', help="train label path")
     parser.add_argument('--val-lable-path', dest='val_label', type=str, default='./Dataset/COCO/bboxes/val.txt', help="validation label path")
     parser.add_argument('--images-dir', type=str, help='images directory of coco/images')
     parser.add_argument('-sf', '--save-fre', type=int, default=5, help='frequency of saving model')
+    parser.add_argument('--resnet-name', type=int, default=101, help='the number of resnet layers')
+    parser.add_argument('--is-SE', action='store_true', help='whether to use SE Block')
     args = vars(parser.parse_args())
 
     for k in args.keys():
@@ -373,7 +380,7 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Using device {device}')
 
-    model = Yolov4(cfg.pretrained, n_classes=cfg.classes)
+    model = Yolov4(cfg.darknet_pretrained, cfg.resnet_pretrained, resnet_name=cfg.resnet_name, is_SE=cfg.is_SE, n_classes=cfg.classes)
 
     if torch.cuda.device_count() > 1:
         model = torch.nn.DataParallel(model)

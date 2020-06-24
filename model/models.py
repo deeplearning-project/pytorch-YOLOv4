@@ -2,6 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
+from .Backbone import ResNet 
 
 class Mish(torch.nn.Module):
     def __init__(self):
@@ -405,8 +406,8 @@ class Yolov4(nn.Module):
             _model.load_state_dict(model_dict)
         elif resnet_weight:
             self.resnet = ResNet(name=resnet_name, is_SE=is_SE, is_backbone=True)
-            pretranined_dict = torch.load(resnet_weight)
-            self.resnet.load_state_dcit(model_dict)
+            pretrained_dict = torch.load(resnet_weight)
+            self.resnet.load_state_dict(pretrained_dict)
             # adjust the number of channels
             self.bottleneck1 = nn.Conv2d(512, 256, kernel_size=1, stride=1)
             self.relu1 = nn.ReLU()
