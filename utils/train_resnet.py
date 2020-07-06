@@ -131,7 +131,7 @@ def main():
     if args.optimizer == 'adam':
         optimizer = torch.optim.Adam([{'params': model.parameters(), 'initial_lr': args.lr}], lr=args.lr)
     elif args.optimizer == 'SGD':
-        optimizer = torch.optim.SGD([{'params': model.parameters(), 'initial_lr': args.lr*0.001}], lr=args.lr*0.001, momentum=0.9, weight_decay=1e-4)
+        optimizer = torch.optim.SGD([{'params': model.parameters(), 'initial_lr': args.lr*0.0001}], lr=args.lr*0.0001, momentum=0.9, weight_decay=1e-4)
     else:
         raise NotImplementedError('Unrecognized optimizer: '+args.optimizer)
     
