@@ -382,7 +382,7 @@ class Yolov4Head(nn.Module):
 class Yolov4(nn.Module):
     def __init__(self, darknet=None, resnet_weight=None, resnet_name=101, is_SE=False, n_classes=80):
         super().__init__()
-        self.backbone = (darknet is not None) or (darknet is None and resnet_weight is None) 
+        self.backbone = (darknet is not None) or (darknet is None and resnet_weight is None and resnet_name==-1) 
         output_ch = (4 + 1 + n_classes) * 3
 
         # neck
@@ -419,11 +419,24 @@ class Yolov4(nn.Module):
             self.relu3 = nn.ReLU()
             self.batchnorm3 = nn.BatchNorm2d(1024)
         else: 
-            self.down1 = DownSample1()
-            self.down2 = DownSample2()
-            self.down3 = DownSample3()
-            self.down4 = DownSample4()
-            self.down5 = DownSample5()
+            if resnet_name != -1:
+	            self.resnet = ResNet(name=resnet_name, is_SE=is_SE, is_backbone=True)
+	            # adjust the number of channels
+	            self.bottleneck1 = nn.Conv2d(512, 256, kernel_size=1, stride=1)
+	            self.relu1 = nn.ReLU()
+	            self.batchnorm1 = nn.BatchNorm2d(256)
+	            self.bottleneck2 = nn.Conv2d(1024, 512, kernel_size=1, stride=1)
+	            self.relu2 = nn.ReLU()
+	            self.batchnorm2 = nn.BatchNorm2d(512)
+	            self.bottleneck3 = nn.Conv2d(2048, 1024, kernel_size=1, stride=1)
+	            self.relu3 = nn.ReLU()
+	            self.batchnorm3 = nn.BatchNorm2d(1024)
+            else:
+	            self.down1 = DownSample1()
+	            self.down2 = DownSample2()
+	            self.down3 = DownSample3()
+	            self.down4 = DownSample4()
+	            self.down5 = DownSample5()
         # head
         self.head = Yolov4Head(output_ch)
 

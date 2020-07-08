@@ -22,6 +22,7 @@ from easydict import EasyDict as edict
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
+sys.path.append('./')
 from cfg.cfg import Cfg
 from tool.darknet2pytorch import Darknet
 from tool.utils import load_class_names
@@ -250,6 +251,8 @@ def get_args(**kwargs):
     parser.add_argument('-c', '--model_config', type=str, default='cfg/yolov4.cfg',
                         help='model config file to load', dest='model_config')
     parser.add_argument('-ld', '--log-dir', type=str, help='log file path')
+    parser.add_argument('--resnet-name', type=int, default=-1, help="resnet name")
+    parser.add_argument('--is-SE', action='store_true', help="whether to use SEblock")
     args = vars(parser.parse_args())
 
     for k in args.keys():
@@ -297,7 +300,7 @@ if __name__ == "__main__":
     logging.info(f'Using device {device}')
     
     if cfg.load:
-        model = Yolov4(n_classes=cfg.classes)
+        model = Yolov4(n_classes=cfg.classes, resnet_name=cfg.resnet_name, is_SE=cfg.is_SE)
         pretrained_dict = torch.load(cfg.load, map_location=device)
         model.load_state_dict(pretrained_dict)
     elif cfg.weights_file:
